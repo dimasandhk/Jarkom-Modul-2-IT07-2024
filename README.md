@@ -384,7 +384,7 @@ zone "rujapala.it07.com" {
     notify yes;
     also-notify { 10.67.3.2; };
     allow-transfer { 10.67.3.2; };
-    file "/etc/bind/it07/pasopati.it07.com";
+    file "/etc/bind/it07/rujapala.it07.com";
 };
 
 zone "1.67.10.in-addr.arpa" {
@@ -642,7 +642,7 @@ Setelah pertempuran mereda, warga IT dapat kembali mengakses jaringan luar dan m
 
 - asumsi yang dimaksud soal adalah Sriwijaya, tetapi setting di sriwijaya maupun majapahit tidak berpengaruh, sama2 bisa karena tiap client punya kedua nameserver dari dns tersebut
 
-### Sriwijaya (DNS Master)
+### Majapahit (DNS Slave)
 
 edit `/etc/bind/named.conf.options` tambahkan dns forwarder
 
@@ -680,9 +680,8 @@ Karena pusat ingin sebuah laman web yang ingin digunakan untuk memantau kondisi 
 setup apache
 
 ```
-apt-get install apache2 -y
-apt-get install libapache2-mod-php7.0 -y
-apt-get install php -y
+apt-get update
+apt-get install apache2 libapache2-mod-php7.0 php wget unzip -y
 ```
 
 lalu config apache agar sesuai dengan template web yang disediakan di soal shift
@@ -694,7 +693,12 @@ cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/pa
 sesuaikan config agar kita dapat akses dengan `pasopati.it07.com` juga tidak hanya dengan ip
 
 ```
-
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/pasopati.it07.com
+    ServerName pasopati.it07.com
+    ServerAlias www.pasopati.it07.com
+</VirtualHost>
 ```
 
 setelah itu import folder lbnya untuk apache
@@ -712,7 +716,7 @@ mv lb/* /var/www/pasopati.it07.com
 
 cp /var/www/pasopati.it07.com/worker/index.php /var/www/pasopati.it07.com/index.php
 
-cp /var/www/html/index.php
+cp /var/www/pasopati.it07.com/index.php /var/www/html/index.php
 rm /var/www/html/index.html
 ```
 
@@ -746,5 +750,223 @@ a2enmod lbmethod_byrequests
 set config apache di `/etc/apache2/sites-available/000-default.conf`
 
 ```
+<VirtualHost *:80>
+    <Proxy balancer://mycluster>
+        BalancerMember http://10.67.1.4
+        BalancerMember http://10.67.1.5
+        BalancerMember http://10.67.1.6
+        ProxySet lbmethod=byrequests
+    </Proxy>
+
+    ProxyPass / balancer://mycluster/
+    ProxyPassReverse / balancer://mycluster/
+
+</VirtualHost>
+```
+
+lalu mulai atau restart apache2
+
+### Tanjungkulai, Bedahulu, Kotalingga (web server)
+
+lakukan config pada setiap web server seperti nomor 12
+
+### Testing
+
+<img src="./images/lb1.png" />
+<img src="./images/lb2.png" />
+<img src="./images/lbberhasil.png" />
+
+## Soal 14
+
+Selama melakukan penjarahan mereka melihat bagaimana web server luar negeri, hal ini membuat mereka iri, dengki, sirik dan ingin flexing sehingga meminta agar web server dan load balancer nya diubah menjadi nginx.
+
+**tiap web server dan load balancer perlu dimatikan dulu service apache2nya**
+
+### Tanjungkulai, Bedahulu, Kotalingga (web server)
+
+install nginx, dan php-fpm untuk support lynx
 
 ```
+apt-get install nginx php-fpm -y
+```
+
+langsung saja edit file config sesuai domain dari web server, contoh Kotalingga dengan domain pasopati:
+
+```
+server {
+    listen 80;
+
+    root /var/www/pasopati.it07.com;
+
+    index index.php index.html index.htm;
+    server_name _ pasopati.it07.com www.pasopati.it07.com;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+file diatas dimasukkan ke `/etc/nginx/sites-available/domain`, dalam kasus ini `/etc/nginx/sites-available/pasopati.it07.com`
+
+lalu perlu clone ke folder `sites-enabled` dan juga remove file default page nginxnya
+
+```
+ln -s /etc/nginx/sites-available/pasopati.it07.com /etc/nginx/sites-enabled/pasopati.it07.com
+rm /etc/nginx/sites-enabled/default
+```
+
+restart nginx dan php fpm
+
+```
+service nginx restart
+service php7.0-fpm start
+```
+
+### Solok (load balancer)
+
+install nginx
+
+```
+apt-get install nginx -y
+```
+
+edit config nginx, `/etc/nginx/sites-available/solok`
+
+```
+upstream webserver  {
+    server 10.67.1.4;
+    server 10.67.1.5;
+    server 10.67.1.6;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://webserver;
+    }
+}
+```
+
+link dengan `sites-enabled` lalu hapus config default nginx
+
+```
+ln -s /etc/nginx/sites-available/solok /etc/nginx/sites-enabled/solok
+rm /etc/nginx/sites-enabled/default
+```
+
+restart nginx
+
+```
+service nginx restart
+```
+
+### Testing
+
+sudah menggunakan nginx
+<img src="./images/buktinginx.png" />
+
+test load balancer
+<img src="./images/nginx1.png" />
+<img src="./images/nginx2.png" />
+
+## Soal 15
+
+Markas pusat meminta laporan hasil benchmark dengan menggunakan apache benchmark dari load balancer dengan 2 web server yang berbeda tersebut dan meminta secara detail dengan ketentuan:
+
+- Nama Algoritma Load Balancer
+- Report hasil testing apache benchmark
+- Grafik request per second untuk masing masing algoritma.
+- Analisis
+- Meme terbaik kalian (terserah ( ͡° ͜ʖ ͡°)) 🤓
+
+### Roundrobin
+
+<img src="./images/roundrobin.png" />
+
+### Least conn
+
+<img src="./images/leastconn.png" />
+
+### IP Hash
+
+<img src="./images/iphash.png" />
+
+### Generic Hash
+
+<img src="./images/generichash.png" />
+
+### Rangkuman pengetesan
+
+```
+round robin:
+complete req: 1000
+failed req: 666
+time taken for test: 1.009 s
+rps: 991.49 #/sec (mean)
+tpr: 100.858 ms (mean)
+transfer rate: 305 kb/sec
+
+least conn:
+complete req: 1000
+failed req: 666
+time taken for test: 1.737 s
+rps: 575.66 #/sec (mean)
+tpr: 173.713 ms (mean)
+transfer rate: 177.09 kb/sec
+
+ip hash:
+complete req: 1000
+failed req: 0
+time taken for test: 1.415 s
+rps: 706.90 #/sec (mean)
+tpr: 141.462 ms (mean)
+transfer rate: 217.46 kb/sec
+
+generic hash:
+complete req: 1000
+failed req: 0
+time taken for test: 1.844 s
+rps: 542.38 #/sec (mean)
+tpr: 184.371 ms (mean)
+transfer rate: 166.85 kb/sec
+```
+
+**analisis:**
+
+> Baik Round Robin dan Least Conn memiliki tingkat kegagalan yang tinggi yaitu 66,6% dengan 666 permintaan yang gagal, meskipun Round Robin mencapai throughput tertinggi pada 991,49 RPS dan TPR terendah pada 100,858 ms. Sebaliknya, IP Hash dan Generic Hash terlihat stabil dengan 0 failed req, dengan IP Hash menghasilkan 706.90 RPS dan TPR 141.462 ms yang seimbang. Round Robin juga tertinggi dalam kecepatan transfer (305 KB/detik), sementara algoritma lainnya memiliki kecepatan transfer yang lebih rendah.
+
+**me to jarkom**:
+<img src="./images/meme.png" />
+
+## Soal 16
+
+Karena dirasa kurang aman dari brainrot karena masih memakai IP, markas ingin akses ke Solok memakai solok.xxxx.com dengan alias www.solok.xxxx.com (sesuai web server terbaik hasil analisis kalian).
+
+## Soal 17
+
+Agar aman, buatlah konfigurasi agar solok.xxx.com hanya dapat diakses melalui port sebesar π x 10^4 = (phi nya desimal) dan 2000 + 2000 log 10 (10) +700 - π = ?.
+
+## Soal 18
+
+Apa bila ada yang mencoba mengakses IP solok akan secara otomatis dialihkan ke www.solok.xxxx.com.
+
+## Soal 19
+
+Karena probset sudah kehabisan ide masuk ke salah satu worker buatkan akses direktori listing yang mengarah ke resource worker2.
+
+## Soal 20
+
+Worker tersebut harus dapat di akses dengan sekiantterimakasih.xxxx.com dengan alias www.sekiantterimakasih.xxxx.com.
