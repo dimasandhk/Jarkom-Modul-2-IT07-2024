@@ -351,7 +351,7 @@ restart bind9
 service bind9 restart
 ```
 
-tes pointer record
+tes pointer record<br>
 <img src="./images/ptrrec.png" />
 
 ## Soal 7
@@ -674,3 +674,77 @@ test client pakai internet
 ## Soal 12
 
 Karena pusat ingin sebuah laman web yang ingin digunakan untuk memantau kondisi kota lainnya maka deploy laman web ini (cek resource yg lb) pada Kotalingga menggunakan apache.
+
+### Kotalingga (web server) 10.67.1.6
+
+setup apache
+
+```
+apt-get install apache2 -y
+apt-get install libapache2-mod-php7.0 -y
+apt-get install php -y
+```
+
+lalu config apache agar sesuai dengan template web yang disediakan di soal shift
+
+```
+cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/pasopati.it07.com.conf
+```
+
+sesuaikan config agar kita dapat akses dengan `pasopati.it07.com` juga tidak hanya dengan ip
+
+```
+
+```
+
+setelah itu import folder lbnya untuk apache
+
+```
+mkdir /var/www/pasopati.it07.com
+
+a2ensite pasopati.it07.com.conf
+
+wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Sqf0TIiybYyUp5nyab4twy9svkgq8bi7' -O lb.zip
+
+unzip lb.zip  -d  lb
+
+mv lb/* /var/www/pasopati.it07.com
+
+cp /var/www/pasopati.it07.com/worker/index.php /var/www/pasopati.it07.com/index.php
+
+cp /var/www/html/index.php
+rm /var/www/html/index.html
+```
+
+2 command terakhir agar kita bisa akses `lynx pasopati.it07.com` dan `lynx 10.67.1.6`, setelah itu restart apache
+
+```
+service apache2 restart
+```
+
+### Testing dari salah satu client
+
+<img src="./images/depberhasil.png" />
+
+## Soal 13
+
+Karena Sriwijaya dan Majapahit memenangkan pertempuran ini dan memiliki banyak uang dari hasil penjarahan (sebanyak 35 juta, belum dipotong pajak) maka pusat meminta kita memasang load balancer untuk membagikan uangnya pada web nya, dengan Kotalingga, Bedahulu, Tanjungkulai sebagai worker dan Solok sebagai Load Balancer menggunakan apache sebagai web server nya dan load balancer nya.
+
+### Solok (load balancer)
+
+setup load balancer menggunakan apache2
+
+```
+apt-get update && apt-get install apache2 -y
+
+a2enmod proxy
+a2enmod proxy_balancer
+a2enmod proxy_http
+a2enmod lbmethod_byrequests
+```
+
+set config apache di `/etc/apache2/sites-available/000-default.conf`
+
+```
+
+```
