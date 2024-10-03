@@ -892,17 +892,365 @@ Markas pusat meminta laporan hasil benchmark dengan menggunakan apache benchmark
 - Analisis
 - Meme terbaik kalian (terserah ( ͡° ͜ʖ ͡°)) 🤓
 
+### Round robin
+
+<img src="./images/roundrobin.png" />
+
+### Least conn
+
+<img src="./images/leastconn.png" />
+
+### IP Hash
+
+<img src="./images/iphash.png">
+
+### Generic Hash
+
+<img src="./images/generichash.png" />
+
+### Rangkuman hasil benchmark
+
+```
+round robin:
+complete req: 1000
+failed req: 666
+time taken for test: 1.009 s
+rps: 991.49 #/sec (mean)
+tpr: 100.858 ms (mean)
+transfer rate: 305 kb/sec
+
+least conn:
+complete req: 1000
+failed req: 666
+time taken for test: 1.737 s
+rps: 575.66 #/sec (mean)
+tpr: 173.713 ms (mean)
+transfer rate: 177.09 kb/sec
+
+ip hash:
+complete req: 1000
+failed req: 0
+time taken for test: 1.415 s
+rps: 706.90 #/sec (mean)
+tpr: 141.462 ms (mean)
+transfer rate: 217.46 kb/sec
+
+generic hash:
+complete req: 1000
+failed req: 0
+time taken for test: 1.844 s
+rps: 542.38 #/sec (mean)
+tpr: 184.371 ms (mean)
+transfer rate: 166.85 kb/sec
+```
+
+**analisis**
+
+> Baik Round Robin dan Least Conn punya tingkat kegagalan yang tinggi yaitu 66,6% dengan 666 request yang gagal, meskipun Round Robin mencapai throughput tertinggi pada 991,49 RPS dan TPR terendah pada 100,858 ms. Sebaliknya, IP Hash dan Generic Hash stabil karena punya 0 permintaan yang gagal, dengan IP Hash menghasilkan 706.90 RPS dan TPR 141.462 ms. Round Robin juga unggul di kecepatan transfer dengan 305 KB/detik, sementara algoritma lainnya memiliki kecepatan transfer yang lebih rendah.
+
+### Rangkuman hasil benchmark web server thdp semua algo
+
+**semua gambar hasil benchmark ada di folder webserver**
+
+```
+roundrobin webserver6:
+time: 0.599 s
+complete 1000/1000
+rps: 1668 /sec
+transfer rate: 513.34 kb/sec
+
+leastconn webserver6:
+time: 0.389 s
+complete 1000/1000
+rps: 2571 /sec
+transfer rate: 791 kb/sec
+
+iphash webserver6:
+time: 0.414 s
+complete 1000/1000
+rps: 2413 /sec
+transfer rate: 742 kb/sec
+
+generichash webserver6:
+time: 0.364 s
+complete 1000/1000
+rps: 2747 /sec
+transfer rate: 845 kb/sec
+
+roundrobin webserver5:
+time: 0.592 s
+complete 1000/1000
+rps: 1688 /sec
+transfer rate: 516 kb/sec
+
+leastconn webserver5:
+time: 0.376 s
+comp 1000/1000
+rps: 2662 /sec
+transfer rate: 813 kb/sec
+
+iphash webserver5:
+time: 0.419 s
+comp 1000/1000
+rps: 2386 /sec
+transfer rate: 729 kb/sec
+
+generichash webserver5:
+time: 0.365 s
+comp 1000/1000
+rps: 2741 /sec
+transfer rate: 837 kb/sec
+
+roundrobin webserver4:
+time: 0.357 s
+comp 1000/1000
+rps: 2805 /sec
+transfer rate: 868 kb/sec
+
+leastconn webserver4:
+time: 0.470 s
+comp 1000/1000
+rps: 2125 /sec
+transfer rate: 658 kb/sec
+
+iphash webserver4:
+time: 0.401 s
+comp 1000/1000
+rps: 2493 /sec
+transfer rate: 771 kb/sec
+
+generichash webserver4:
+time: 0.385 s
+comp 1000/1000
+rps: 2597 /sec
+transfer rate: 803 kb/sec
+```
+
+**analisis:**
+
+> Node tanjungkulai unggul dari yang lain di sebagian besar algo. terlihat dari (RPS) tertinggi dan waktu respons tercepat, terutama dengan algo roundrobin (2805 RPS dalam 0,357 detik) dan algo generichash (2597 RPS dalam 0,385 detik). tanjungkulai juga mencapai kecepatan transfer tertinggi di beberapa benchmark, sampai 868 kb/detik memakai roundrobin. Sebaliknya, kotalingga dan bedahulu sedikit tertinggal, dengan RPS yang sedikit lebih rendah dan waktu respons yang lebih lama secara umum.
+
+### web server terbaik = tanjungkulai
+
+**me to jarkom:**
+<img src="./images/meme.png" />
+
 ## Soal 16
 
-Karena dirasa kurang aman dari brainrot karena masih memakai IP, markas ingin akses ke Solok memakai solok.xxxx.com dengan alias www.solok.xxxx.com (sesuai web server terbaik hasil analisis kalian).
+Karena dirasa kurang aman dari brainrot karena masih memakai IP, markas ingin akses ke Solok memakai solok.xxxx.com dengan alias www.solok.xxxx.com (sesuai web server terbaik hasil analisis kalian). **tanjungkulai**
+
+**izin masuk, sepertinya soal kurang jelas. Di nomor 16 tertera diminta buat domain solok untuk ke ip solok. jadi apakah domain solok ke ip solok atau domain solok ke webserver? mengingat 22nya sudah punya domain**
+
+### Sriwijaya (DNS Master)
+
+edit `/etc/bind/named.conf.local` tambah zone baru
+
+```
+zone "solok.it07.com" {
+    type master;
+    file "/etc/bind/it07/solok.it07.com";
+};
+```
+
+edit dns record dengan terlebih dahulu copy `db.local` ke ip solok `10.67.3.3`
+
+```
+;
+; BIND data file for local loopback interface
+;
+$TTL    604800
+@       IN      SOA     solok.it07.com. root.solok.it07.com. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      solok.it07.com.
+@       IN      A       10.67.1.4
+@       IN      AAAA    ::1
+www     IN      CNAME   solok.it07.com.
+```
+
+### Web server terbaik (tanjungkulai)
+
+edit `/etc/nginx/sites-available/rujapala.it07.com` tambahkan domain solok
+
+```
+server {
+    listen 80;
+
+    root /var/www/rujapala.it07.com;
+
+    index index.php index.html index.htm;
+    server_name _ rujapala.it07.com solok.it07.com www.rujapala.it07.com www.solok.it07.com;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+restart bind
+
+```
+service bind9 restart
+```
+
+### Testing
+
+<img src="./lb/no16.gif" />
 
 ## Soal 17
 
 Agar aman, buatlah konfigurasi agar solok.xxx.com hanya dapat diakses melalui port sebesar π x 10^4 = (phi nya desimal) dan 2000 + 2000 log 10 (10) +700 - π = ?.
 
+- 3,14 x 10^4 = 31400
+- 2000 + 2000 log 10 (10) + 700 - 3,14 = kurleb 4696
+
+**karena pada nomor sebelumnya domain solok untuk webserver terbaik yang telah dibenchmark, maka dari itu config portnya dari tanjungkulai**
+
+### Tanjungkulai (web server)
+
+edit `/etc/nginx/sites-available/rujapala.it07.com`
+
+```
+server {
+    listen 31400;
+
+    root /var/www/rujapala.it07.com;
+
+    index index.php index.html index.htm;
+    server_name _ rujapala.it07.com solok.it07.com www.rujapala.it07.com www.solok.it07.com;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+
+server {
+    listen 4696;
+
+    root /var/www/rujapala.it07.com;
+
+    index index.php index.html index.htm;
+    server_name _ rujapala.it07.com solok.it07.com www.rujapala.it07.com www.solok.it07.com;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+restart nginx
+
+```
+service nginx restart
+```
+
+### Testing
+
+<img src="./lb/no17baru.gif" />
+
 ## Soal 18
 
 Apa bila ada yang mencoba mengakses IP solok akan secara otomatis dialihkan ke www.solok.xxxx.com.
+
+### Solok
+
+install php-fpm untuk support lynx menggunakan nginx
+
+```
+apt-get install php-fpm -y
+```
+
+edit `/etc/nginx/sites-available/solok` menjadi, untuk redirect ke domain solok
+
+```
+upstream webserver  {
+    server 10.67.1.4;
+    server 10.67.1.5;
+    server 10.67.1.6;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://webserver;
+    }
+}
+
+server {
+    listen 80;
+
+    root /var/www/html;
+
+    index index.php index.html index.htm;
+    server_name www.solok.it07.com;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+
+server {
+    listen 80 default_server;
+    server_name _;
+    return 301 http://www.solok.it07.com;
+}
+```
+
+restart nginx
+
+```
+service nginx restart
+```
+
+### Testing
+
+<img src="./lb/no18.gif" />
 
 ## Soal 19
 
