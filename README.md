@@ -1052,7 +1052,7 @@ zone "solok.it07.com" {
 };
 ```
 
-edit dns record dengan terlebih dahulu copy `db.local` ke ip solok `10.67.3.3`
+edit dns record dengan terlebih dahulu copy `db.local` ke ip web server terbaik berdasarkan analisis `10.67.1.4`
 
 ```
 ;
@@ -1070,6 +1070,12 @@ $TTL    604800
 @       IN      A       10.67.1.4
 @       IN      AAAA    ::1
 www     IN      CNAME   solok.it07.com.
+```
+
+restart bind
+
+```
+service bind9 restart
 ```
 
 ### Web server terbaik (tanjungkulai)
@@ -1101,10 +1107,10 @@ server {
 }
 ```
 
-restart bind
+restart nginx
 
 ```
-service bind9 restart
+service nginx restart
 ```
 
 ### Testing
@@ -1256,6 +1262,86 @@ service nginx restart
 
 Karena probset sudah kehabisan ide masuk ke salah satu worker buatkan akses direktori listing yang mengarah ke resource worker2.
 
+salah satu worker:
+**pilih bedahulu 👆**
+
+### Sriwijaya (DNS Master)
+
+edit `/etc/bind/named.conf.local` tambahkan zone baru untuk sekiantterimakasih
+
+```
+zone "sekiantterimakasih.it07.com" {
+    type master;
+    file "/etc/bind/it07/sekiantterimakasih.it07.com";
+};
+```
+
+edit `/etc/bind/it07/sekiantterimakasih.it07.com` untuk ke ip kotalingga
+
+```
+;
+; BIND data file for local loopback interface
+;
+$TTL    604800
+@       IN      SOA     sekiantterimakasih.it07.com. root.sekiantterimakasih.it07.com. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      sekiantterimakasih.it07.com.
+@       IN      A       10.67.1.5
+www     IN      CNAME   sekiantterimakasih.it07.com.
+```
+
+restart bind
+
+```
+service bind9 restart
+```
+
+### Bedahulu (web server)
+
+tambahkan server untuk domain sekiantterimakasih di `/etc/nginx/sites-available/cakra.sudarsana.it07.com`
+
+```
+server {
+    listen 80;
+    server_name sekiantterimakasih.it07.com www.sekiantterimakasih.it07.com;
+
+    root /var/www/sekiantterimakasih.it07.com/dir-listing/worker2;
+    index index.php index.html index.htm;
+
+    location / {
+        autoindex on;
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
+lalu untuk dirlistnya sendiri
+
+```
+wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=1JGk8b-tZgzAOnDqTx5B3F9qN6AyNs7Zy' -O dir-listing.zip
+
+unzip dir-listing.zip -d dir-listing
+
+mkdir /var/www/sekiantterimakasih.it07.com
+
+mv dir-listing/* /var/www/sekiantterimakasih.it07.com
+```
+
+restart nginx
+
+```
+service nginx restart
+```
+
 ## Soal 20
 
 Worker tersebut harus dapat di akses dengan sekiantterimakasih.xxxx.com dengan alias www.sekiantterimakasih.xxxx.com.
+
+<img src="./lb/no19.gif" />
+
+hamdalah
